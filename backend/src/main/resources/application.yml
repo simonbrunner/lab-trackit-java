@@ -15,3 +15,5 @@ spring:
     enabled: true
 server:
   port: 8080
+trackit:
+  zone-id: ${TRACKIT_ZONE_ID:Europe/Zurich}

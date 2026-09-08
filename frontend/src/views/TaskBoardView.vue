@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { createTask, listTasks, type Task } from "../api/tasks";
+import { getServerStatus, type ServerStatus } from "../api/serverStatus";
 
 const tasks = ref<Task[]>([]);
 const title = ref("");
 const project = ref("trackit");
 const loading = ref(false);
 const error = ref<string | null>(null);
+
+const serverStatus = ref<ServerStatus | null>(null);
+const serverStatusLoading = ref(false);
+const serverStatusError = ref<string | null>(null);
 
 async function load() {
   loading.value = true;
@@ -17,6 +22,18 @@ async function load() {
     error.value = "Could not reach the backend on /api/v1/tasks.";
   } finally {
     loading.value = false;
+  }
+}
+
+async function loadServerStatus() {
+  serverStatusLoading.value = true;
+  serverStatusError.value = null;
+  try {
+    serverStatus.value = await getServerStatus();
+  } catch {
+    serverStatusError.value = "Could not reach the backend on /api/v1/server-status.";
+  } finally {
+    serverStatusLoading.value = false;
   }
 }
 
@@ -36,10 +53,18 @@ async function submit() {
 }
 
 onMounted(load);
+onMounted(loadServerStatus);
 </script>
 
 <template>
   <section>
+    <p v-if="serverStatusError" class="error server-status">{{ serverStatusError }}</p>
+    <p v-else-if="serverStatusLoading" class="server-status">Loading server status...</p>
+    <p v-else-if="serverStatus" class="server-status">
+      {{ serverStatus.zoneId }} · {{ serverStatus.dateTime }} ·
+      {{ serverStatus.weather.temperatureCelsius }}&deg;C {{ serverStatus.weather.condition }}
+    </p>
+
     <form class="new-task" @submit.prevent="submit">
       <input v-model="title" placeholder="What needs doing?" aria-label="Task title" />
       <input v-model="project" placeholder="Project" aria-label="Project" />
@@ -117,5 +142,10 @@ onMounted(load);
 }
 .error {
   color: #a3302b;
+}
+.server-status {
+  color: #6b7a80;
+  font-size: 0.85rem;
+  margin: 0 0 1rem;
 }
 </style>
